@@ -1,0 +1,6 @@
+@tunepool_HostAddress = http://localhost:5193
+
+GET {{tunepool_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
