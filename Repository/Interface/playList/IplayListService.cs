@@ -1,6 +1,9 @@
-﻿namespace tunepool.Repository.Interface.playList
+﻿using tunepool.Repository.ViewModel.playList;
+
+namespace tunepool.Repository.Interface.playList
 {
-    public class IplayListService
+    public interface IplayListService
     {
+        Task<playListViewModel> getAll();
     }
 }

@@ -2,11 +2,15 @@
 
 namespace tunepool.Controllers.playList
 {
-    public class playListController : Controller
+    [ApiController]
+    [Route("playList")]
+    public class playListController : ControllerBase
     {
-        public IActionResult Index()
+
+        [HttpGet("First")]
+        public async Task<IActionResult> getPLayList()
         {
-            return View();
+            return StatusCode(200);
         }
     }
 }

@@ -1,0 +1,14 @@
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using tunepool.Repository.Model.playList;
+
+namespace tunepool.Repository.Model.Popularity
+{
+    public class Popularity
+    {
+        [ForeignKey("Playlist")]
+        public int playListId { get; set; }
+        public Playlist? Playlist { get; set; }
+        public int likes { get; set; }
+        public int hearts { get; set; }
+    }
+}
