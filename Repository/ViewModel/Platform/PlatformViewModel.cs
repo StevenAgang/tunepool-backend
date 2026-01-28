@@ -1,4 +1,4 @@
-﻿namespace tunepool.Repository.ViewModel.Platform
+﻿namespace tunepool.Repository.ViewModel.platformViewModel
 {
     public class PlatformViewModel
     {

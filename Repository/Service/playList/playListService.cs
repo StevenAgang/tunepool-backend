@@ -1,15 +1,17 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using tunepool.Repository.Interface.playList;
+using tunepool.Repository.Interface.playlistInterface;
 using tunepool.Repository.Model.platform;
-using tunepool.Repository.ViewModel.Platform;
-using tunepool.Repository.ViewModel.playList;
-using tunepool.Repository.ViewModel.Popularity;
-using tunepool.Repository.ViewModel.Tags;
+using tunepool.Repository.Model.playlist;
+using tunepool.Repository.Model.playlistTags;
+using tunepool.Repository.ViewModel.platformViewModel;
+using tunepool.Repository.ViewModel.playlistViewModel;
+using tunepool.Repository.ViewModel.popularityViewModel;
+using tunepool.Repository.ViewModel.tagsViewModel;
 
-namespace tunepool.Repository.Service.playList
+namespace tunepool.Repository.Service.PlaylistService
 {
-    public class PlaylistService : IplayListService
+    public class PlaylistService : IPlaylistService
     {
         private readonly DatabaseContext _context;
         public PlaylistService(DatabaseContext context)
@@ -45,6 +47,33 @@ namespace tunepool.Repository.Service.playList
                 }).ToListAsync();
 
             return Playlist;
+        }
+
+        public async Task Add(string link, string title, string description, string[] tags, string thumbnail, string platform)
+        {
+            var platformId = _context.PlatForm.FirstOrDefault(p => p.name == platform);
+            var tagsList = _context.Tags.Where(p => tags.Contains(p.name)).ToList();
+            var playlist = new Playlist
+            {
+                title = title,
+                description = description,
+                playList_Urls = link,
+                platform_id = platformId!.Id,
+                thumbnail = thumbnail,
+                createdAt = DateTime.Now
+            };
+
+            _context.Add(playlist);
+            await _context.SaveChangesAsync();
+
+            var playlistTags = tagsList.Select(t => new PlaylistTags
+            {
+                playlist_id = playlist.Id,
+                tags_id = t.Id,
+            });
+
+            _context.AddRange(playlistTags);
+            await _context.SaveChangesAsync();
         }
     }
 

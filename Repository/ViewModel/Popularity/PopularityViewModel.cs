@@ -1,4 +1,4 @@
-﻿namespace tunepool.Repository.ViewModel.Popularity
+﻿namespace tunepool.Repository.ViewModel.popularityViewModel
 {
     public class PopularityViewModel
     {

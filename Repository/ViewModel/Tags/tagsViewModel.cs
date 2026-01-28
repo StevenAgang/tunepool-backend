@@ -1,4 +1,4 @@
-﻿namespace tunepool.Repository.ViewModel.Tags
+﻿namespace tunepool.Repository.ViewModel.tagsViewModel
 {
     public class TagsViewModel
     {

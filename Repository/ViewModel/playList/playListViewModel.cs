@@ -1,8 +1,8 @@
-﻿using tunepool.Repository.ViewModel.Platform;
-using tunepool.Repository.ViewModel.Popularity;
-using tunepool.Repository.ViewModel.Tags;
+﻿using tunepool.Repository.ViewModel.platformViewModel;
+using tunepool.Repository.ViewModel.popularityViewModel;
+using tunepool.Repository.ViewModel.tagsViewModel;
 
-namespace tunepool.Repository.ViewModel.playList
+namespace tunepool.Repository.ViewModel.playlistViewModel
 {
     public class PlaylistViewModel
     {

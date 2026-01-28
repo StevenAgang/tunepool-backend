@@ -3,7 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using tunepool.Repository.Model.platform;
 using tunepool.Repository.Model.playlistTags;
 using tunepool.Repository.Model.popularity;
-namespace tunepool.Repository.Model.playList
+
+namespace tunepool.Repository.Model.playlist
 {
     public class Playlist : BaseModel
     {

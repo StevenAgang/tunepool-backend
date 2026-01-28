@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using tunepool.Repository;
 using tunepool.Repository.Configuration.Helper;
-using tunepool.Repository.Interface.playList;
-using tunepool.Repository.Service.playList;
+using tunepool.Repository.Interface.playlistInterface;
+using tunepool.Repository.Service.PlaylistService;
+using tunepool.Repository.Service.Validation.Playlist;
 
 namespace tunepool
 {
@@ -12,18 +13,20 @@ namespace tunepool
         {
             var builder = WebApplication.CreateBuilder(args);
             // Add services to the container.
-            builder.Services.AddScoped<IplayListService, PlaylistService>();
+
+            //Scoped Service
+            builder.Services.AddScoped<IPlaylistService, PlaylistService>();
+
+            //Singleton Service
             builder.Services.AddSingleton<RequestStatusHelper >();
-
-
-
+            builder.Services.AddSingleton<PlaylistValidation>();
 
             DotNetEnv.Env.TraversePath().Load();
             var connection = Environment.GetEnvironmentVariable("CONNECTIONSTRING");
 
             builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlServer(connection));
 
-            builder.Services.AddHttpClient();
+            builder.Services.AddHttpClient<LinkExtractor>();
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

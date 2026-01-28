@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using tunepool.Repository.Model.platform;
-using tunepool.Repository.Model.playList;
+using tunepool.Repository.Model.playlist;
 using tunepool.Repository.Model.playlistTags;
 using tunepool.Repository.Model.popularity;
 using tunepool.Repository.Model.tags;

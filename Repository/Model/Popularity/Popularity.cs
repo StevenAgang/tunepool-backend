@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using tunepool.Repository.Model.playList;
+using tunepool.Repository.Model.playlist;
 
 namespace tunepool.Repository.Model.popularity
 {
