@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using tunepool.Repository;
+using tunepool.Repository.Configuration.Helper;
+using tunepool.Repository.Interface.playList;
+using tunepool.Repository.Service.playList;
 
 namespace tunepool
 {
@@ -8,9 +11,13 @@ namespace tunepool
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
-
             // Add services to the container.
+            builder.Services.AddScoped<IplayListService, PlaylistService>();
+            builder.Services.AddSingleton<RequestStatusHelper >();
+
+
+
+
             DotNetEnv.Env.TraversePath().Load();
             var connection = Environment.GetEnvironmentVariable("CONNECTIONSTRING");
 

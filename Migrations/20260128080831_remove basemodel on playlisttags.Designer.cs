@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tunepool.Repository;
 
@@ -11,9 +12,11 @@ using tunepool.Repository;
 namespace tunepool.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260128080831_remove basemodel on playlisttags")]
+    partial class removebasemodelonplaylisttags
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -82,7 +85,7 @@ namespace tunepool.Migrations
                     b.Property<int>("tags_id")
                         .HasColumnType("int");
 
-                    b.HasKey("playlist_id", "tags_id");
+                    b.HasIndex("playlist_id");
 
                     b.HasIndex("tags_id");
 
@@ -91,16 +94,16 @@ namespace tunepool.Migrations
 
             modelBuilder.Entity("tunepool.Repository.Model.popularity.Popularity", b =>
                 {
-                    b.Property<int>("playListId")
-                        .HasColumnType("int");
-
                     b.Property<int>("hearts")
                         .HasColumnType("int");
 
                     b.Property<int>("likes")
                         .HasColumnType("int");
 
-                    b.HasKey("playListId");
+                    b.Property<int>("playListId")
+                        .HasColumnType("int");
+
+                    b.HasIndex("playListId");
 
                     b.ToTable("Popularity");
                 });
@@ -138,13 +141,13 @@ namespace tunepool.Migrations
             modelBuilder.Entity("tunepool.Repository.Model.playlistTags.PlaylistTags", b =>
                 {
                     b.HasOne("tunepool.Repository.Model.playList.Playlist", "Playlist")
-                        .WithMany("PlaylistTags")
+                        .WithMany()
                         .HasForeignKey("playlist_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("tunepool.Repository.Model.tags.Tags", "Tags")
-                        .WithMany("PlaylistTags")
+                        .WithMany()
                         .HasForeignKey("tags_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -157,24 +160,12 @@ namespace tunepool.Migrations
             modelBuilder.Entity("tunepool.Repository.Model.popularity.Popularity", b =>
                 {
                     b.HasOne("tunepool.Repository.Model.playList.Playlist", "Playlist")
-                        .WithMany("Popularity")
+                        .WithMany()
                         .HasForeignKey("playListId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Playlist");
-                });
-
-            modelBuilder.Entity("tunepool.Repository.Model.playList.Playlist", b =>
-                {
-                    b.Navigation("PlaylistTags");
-
-                    b.Navigation("Popularity");
-                });
-
-            modelBuilder.Entity("tunepool.Repository.Model.tags.Tags", b =>
-                {
-                    b.Navigation("PlaylistTags");
                 });
 #pragma warning restore 612, 618
         }

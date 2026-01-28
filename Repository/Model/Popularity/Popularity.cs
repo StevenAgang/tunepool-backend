@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using tunepool.Repository.Model.playList;
 
-namespace tunepool.Repository.Model.Popularity
+namespace tunepool.Repository.Model.popularity
 {
     public class Popularity
     {

@@ -1,6 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.ComponentModel.DataAnnotations.Schema;
 using tunepool.Repository.Model.platform;
-
+using tunepool.Repository.Model.playlistTags;
+using tunepool.Repository.Model.popularity;
 namespace tunepool.Repository.Model.playList
 {
     public class Playlist : BaseModel
@@ -15,5 +17,9 @@ namespace tunepool.Repository.Model.playList
         public Platform? Platform { get; set; }
 
         public string? thumbnail { get; set; }
+
+        //Navigation Prop
+        public ICollection<Popularity>? Popularity { get; set; }
+        public ICollection<PlaylistTags>? PlaylistTags { get; set; }
     }
 }

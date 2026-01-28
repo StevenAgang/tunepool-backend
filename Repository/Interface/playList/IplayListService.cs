@@ -4,6 +4,10 @@ namespace tunepool.Repository.Interface.playList
 {
     public interface IplayListService
     {
-        Task<playListViewModel> getAll();
+        /// <summary>
+        /// Return all Playlist
+        /// </summary>
+        /// <returns>Returns a set of Playlist</returns>
+        Task<List<PlaylistViewModel>> All();
     }
 }

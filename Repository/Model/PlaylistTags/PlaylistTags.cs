@@ -2,11 +2,11 @@
 using tunepool.Repository.Model.playList;
 using tunepool.Repository.Model.tags;
 
-namespace tunepool.Repository.Model.PlaylistTags
+namespace tunepool.Repository.Model.playlistTags
 {
-    public class PlaylistTags : BaseModel
+    public class PlaylistTags
     {
-        [ForeignKey("PLaylist")]
+        [ForeignKey("Playlist")]
         public int playlist_id { get; set; }
         public Playlist? Playlist { get; set; }
         [ForeignKey("Tags")]

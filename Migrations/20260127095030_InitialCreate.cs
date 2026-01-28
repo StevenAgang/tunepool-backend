@@ -68,7 +68,6 @@ namespace tunepool.Migrations
                 columns: table => new
                 {
                     playlist_id = table.Column<int>(type: "int", nullable: false),
-                    PlaylistId = table.Column<int>(type: "int", nullable: true),
                     tags_id = table.Column<int>(type: "int", nullable: false),
                     Id = table.Column<int>(type: "int", nullable: false),
                     createdAt = table.Column<DateTime>(type: "datetime2", nullable: true)
@@ -77,7 +76,7 @@ namespace tunepool.Migrations
                 {
                     table.ForeignKey(
                         name: "FK_PlaylistTags_Playlist_PlaylistId",
-                        column: x => x.PlaylistId,
+                        column: x => x.playlist_id,
                         principalTable: "Playlist",
                         principalColumn: "Id");
                     table.ForeignKey(

@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using tunepool.Repository.Model.platform;
 using tunepool.Repository.Model.playList;
-using tunepool.Repository.Model.PlaylistTags;
-using tunepool.Repository.Model.Popularity;
+using tunepool.Repository.Model.playlistTags;
+using tunepool.Repository.Model.popularity;
 using tunepool.Repository.Model.tags;
 
 namespace tunepool.Repository
@@ -18,11 +18,28 @@ namespace tunepool.Repository
         public DbSet<PlaylistTags> PlaylistTags { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<Popularity>()
-                .HasNoKey();
+                .HasKey(p => new {p.playListId});
+
+            modelBuilder.Entity<Popularity>()
+                .HasOne(p => p.Playlist)
+                .WithMany(p => p.Popularity)
+                .HasForeignKey(p => p.playListId);
+
             modelBuilder.Entity<PlaylistTags>()
-                .HasNoKey();
+                .HasKey(pt => new { pt.playlist_id, pt.tags_id });
+
+            modelBuilder.Entity<PlaylistTags>()
+                .HasOne(pt => pt.Playlist)
+                .WithMany(p => p.PlaylistTags)
+                .HasForeignKey(pt => pt.playlist_id);
+
+            modelBuilder.Entity<PlaylistTags>()
+                .HasOne(pt => pt.Tags)
+                .WithMany(p => p.PlaylistTags)
+                .HasForeignKey(pt => pt.tags_id);
+
+            base.OnModelCreating(modelBuilder);
         }
     }
 }
