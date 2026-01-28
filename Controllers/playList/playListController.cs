@@ -22,7 +22,7 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpGet("getAllPlaylist")]
-        public async Task<IActionResult> getAllPlaylist()
+        public async Task<IActionResult> GetAllPlaylist()
         {
             try
             {
@@ -36,13 +36,13 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpPost("addPlaylist")]
-        public async Task<IActionResult> addPlaylist(string link,string title,string description,string[] tags)
+        public async Task<IActionResult> AddPlaylist(string link,string title,string description,string[] tags)
         {
             try
             {
-                _playlistValidation.playlistInput(link,title,description,tags);
-                string platform =  _linkExtractor.domain(link);
-                string thumbnail = await _linkExtractor.thumbnails(link,platform);
+                _playlistValidation.PlaylistInput(link,title,description,tags);
+                string platform =  _linkExtractor.Domain(link);
+                string thumbnail = await _linkExtractor.Thumbnails(link,platform);
                 await _playListService.Add(link, title, description, tags, thumbnail, platform);
                 return StatusCode(200, _requestStatusHelper.Success(200, true, "Playlist Added Successfully", null));
             }

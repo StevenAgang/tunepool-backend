@@ -2,7 +2,7 @@
 {
     public class PlaylistValidation
     {
-        public void playlistInput(string link, string title, string description, string[] tags)
+        public void PlaylistInput(string link, string title, string description, string[] tags)
         {
             if (string.IsNullOrEmpty(link)) throw new Exception("link is required");
             if (string.IsNullOrEmpty(title)) throw new Exception("title is required");

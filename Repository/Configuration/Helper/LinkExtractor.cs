@@ -14,7 +14,7 @@ namespace tunepool.Repository.Configuration.Helper
             _httpClient = httpClient;
         }
 
-        public string domain(string link)
+        public string Domain(string link)
         {
             var pattern = new Dictionary<string, string> {
 
@@ -39,7 +39,7 @@ namespace tunepool.Repository.Configuration.Helper
             throw new Exception("Unsupported Platform");
         }
 
-        public string extractPlaylistID(string link, string platform)
+        public string ExtractPlaylistID(string link, string platform)
         {
             Uri uri = new Uri(link);
 
@@ -58,22 +58,22 @@ namespace tunepool.Repository.Configuration.Helper
            
         }
 
-        public async Task<string> thumbnails(string link, string platform)
+        public async Task<string> Thumbnails(string link, string platform)
         {
             string key = "";
             string request = "";
-            string id = extractPlaylistID(link,platform);
+            string id = ExtractPlaylistID(link,platform);
             if (platform == "Youtube")
             {
                 key = Environment.GetEnvironmentVariable("YTAPIKEY")!;
                 request = "https://youtube.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&id=";
                 request += id + "&key=" + key;
-                return await getYoutubeThumbnails(request);
+                return await GetYoutubeThumbnails(request);
             }
             throw new Exception("Unsupported Platform");
         }
 
-        public async Task<string> getYoutubeThumbnails(string request)
+        public async Task<string> GetYoutubeThumbnails(string request)
         {
             var result = await _httpClient.GetAsync(request);
             result.EnsureSuccessStatusCode();
