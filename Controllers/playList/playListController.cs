@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using tunepool.Repository.Configuration.Helper;
 using tunepool.Repository.Interface.playlistInterface;
+using tunepool.Repository.Interface.popularityInterface;
 using tunepool.Repository.Service.Validation.Playlist;
 
 namespace tunepool.Controllers.playList
@@ -13,15 +14,22 @@ namespace tunepool.Controllers.playList
         private IPlaylistService _playListService;
         private PlaylistValidation _playlistValidation;
         private LinkExtractor _linkExtractor;
-        public PlaylistController(RequestStatusHelper requestStatusHelper, IPlaylistService iplayListService, PlaylistValidation playlistValidation, LinkExtractor linkExtractor)
+        private IPopularityService _popularityService;
+        public PlaylistController(
+            RequestStatusHelper requestStatusHelper, 
+            IPlaylistService iplayListService, 
+            PlaylistValidation playlistValidation, 
+            LinkExtractor linkExtractor, 
+            IPopularityService popularityService)
         {
             _requestStatusHelper = requestStatusHelper;
             _playListService = iplayListService;
             _playlistValidation = playlistValidation;
             _linkExtractor = linkExtractor;
+            _popularityService = popularityService;
         }
 
-        [HttpGet("getAllPlaylist")]
+        [HttpGet("GetAllPlaylist")]
         public async Task<IActionResult> GetAllPlaylist()
         {
             try
@@ -35,7 +43,7 @@ namespace tunepool.Controllers.playList
             }
         }
 
-        [HttpPost("addPlaylist")]
+        [HttpPost("AddPlaylist")]
         public async Task<IActionResult> AddPlaylist(string link,string title,string description,string[] tags)
         {
             try
@@ -49,6 +57,34 @@ namespace tunepool.Controllers.playList
             catch (Exception ex)
             {
                 return StatusCode(500, _requestStatusHelper.Success(500,false,ex.Message,null));
+            }
+        }
+
+        [HttpPost("LikePlaylist")]
+        public async Task<IActionResult> LikePlaylist(int playListId)
+        {
+            try
+            {
+                await _popularityService.Like(playListId);
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, null));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null));
+            }
+        }
+
+        [HttpPost("HeartsPlaylist")]
+        public async Task<IActionResult> HeartsPlaylist(int playlistId)
+        {
+            try
+            {
+                await _popularityService.Hearts(playlistId);
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, null));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null));
             }
         }
     }

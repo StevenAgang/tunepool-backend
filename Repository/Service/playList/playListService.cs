@@ -4,6 +4,7 @@ using tunepool.Repository.Interface.playlistInterface;
 using tunepool.Repository.Model.platform;
 using tunepool.Repository.Model.playlist;
 using tunepool.Repository.Model.playlistTags;
+using tunepool.Repository.Model.popularity;
 using tunepool.Repository.ViewModel.platformViewModel;
 using tunepool.Repository.ViewModel.playlistViewModel;
 using tunepool.Repository.ViewModel.popularityViewModel;
@@ -73,6 +74,16 @@ namespace tunepool.Repository.Service.PlaylistService
             });
 
             _context.AddRange(playlistTags);
+            await _context.SaveChangesAsync();
+
+            var popularity = new Popularity
+            {
+                playListId = playlist.Id,
+                likes = 0,
+                hearts = 0,
+            };
+
+            _context.Add(popularity);
             await _context.SaveChangesAsync();
         }
     }
