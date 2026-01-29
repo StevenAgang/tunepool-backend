@@ -6,6 +6,7 @@ using tunepool.Repository.Interface.serviceProviderTokenInterface;
 
 namespace tunepool.Repository.Configuration.Helper
 {
+    // This class validate playlist services and extract its thumbnail
     public class LinkExtractor
     {
         private HttpClient _httpClient;
@@ -30,7 +31,6 @@ namespace tunepool.Repository.Configuration.Helper
                 {@"deezer\.com","Deezer"},
                 {@"tidal\.com","Tidal"},
                 {@"music\.amazon\.com","Amazon Music"},
-                {@"(mixcloud\.com)","MixCloud"}
 
             };
             foreach(var dom in pattern)
@@ -47,18 +47,19 @@ namespace tunepool.Repository.Configuration.Helper
         {
             Uri uri = new Uri(link);
 
-            if (platform == "Youtube")
+            switch (platform)
             {
-                var query = HttpUtility.ParseQueryString(uri.Query);
-                return query["list"]!;
+                case "Youtube":
+                    var query = HttpUtility.ParseQueryString(uri.Query);
+                    return query["list"]!;
+                case "Spotify":
+                case "Deezer":
+                case "Tidal":
+                    string[] segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                    return segments[^1];
+                default:
+                    return string.Empty;
             }
-            if(platform == "Spotify")
-            {
-                string[] segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-                return segments[^1];
-            }
-
-            return string.Empty;
            
         }
 
@@ -81,12 +82,14 @@ namespace tunepool.Repository.Configuration.Helper
             int index = rand.Next(0, defaultThumbnail.Length);
             string request = "";
             string id = ExtractPlaylistID(link,platform);
+            string thumbanail = "";
+
             if (platform == "Youtube" || platform == "Youtube Music")
             {
                 string key = Environment.GetEnvironmentVariable("YTAPIKEY")!;
                 request = "https://youtube.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&id=";
                 request += id + "&key=" + key;
-                return await GetYoutubeThumbnail(request);
+                thumbanail = await GetYoutubeThumbnail(request);
             }
             if (platform == "Sound Cloud")
             {
@@ -95,10 +98,26 @@ namespace tunepool.Repository.Configuration.Helper
 
                 string escapeUrl = Uri.EscapeDataString(link);
                 request = $"https://api.soundcloud.com/resolve?url={escapeUrl}" ;
-                return await GetSoundCloudThumbnail(request, clientId, secretId, platform);
+                thumbanail = await GetSoundCloudThumbnail(request, clientId, secretId, platform);
 
             }
-            return defaultThumbnail[index];
+            if(platform == "Deezer")
+            {
+                request = $"https://api.deezer.com/playlist/{id}";
+                thumbanail = await GetDeezerThumbnail(request);
+            }
+            if(platform == "Tidal")
+            {
+                string clientId = Environment.GetEnvironmentVariable("TLCLIENTID")!;
+                string secretId = Environment.GetEnvironmentVariable("TLSECRETID")!;
+                request = $"https://openapi.tidal.com/v2/playlists/{id}?include=coverArt";
+                thumbanail = await GetTidalThumbnail(request,clientId,secretId,platform);
+            }
+            if (string.IsNullOrEmpty(thumbanail))
+            {
+                return defaultThumbnail[index];
+            }
+            return thumbanail;
         }
 
         public async Task<string> GetYoutubeThumbnail(string request)
@@ -118,15 +137,10 @@ namespace tunepool.Repository.Configuration.Helper
             return thumbail;
         }
 
-        public async Task<string> GetSpotifyThumbnail()
-        {
-            return string.Empty;
-        }
-
         public async Task<string> GetSoundCloudThumbnail(string request, string clientId, string secretId, string platform)
         {
 
-            var soundCloud = await _serviceProviderToken.GetSoundCloudAccessToken();
+            var soundCloud = await _serviceProviderToken.GetAccessToken(platform);
             string authString = clientId + ":" + secretId;
             string authBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(authString));
             var accessToken = soundCloud.FirstOrDefault() ?? new Model.serviceProviderToken.ServiceProviderToken();
@@ -174,6 +188,77 @@ namespace tunepool.Repository.Configuration.Helper
             var doc = JsonDocument.Parse(json);
             var thumbnail = doc.RootElement.GetProperty("artwork_url").GetString();
             return thumbnail;
+        }
+
+        public async Task<string> GetDeezerThumbnail(string request)
+        {
+            var result = await _httpClient.GetAsync(request);
+            var json = await result.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(json);
+            var thumbnail = doc.RootElement.GetProperty("picture_xl").GetString();
+            return thumbnail;
+        }
+
+        public async Task<string> GetTidalThumbnail(string request, string clientId, string secretId,string platform)
+        {
+            var tidal = await _serviceProviderToken.GetAccessToken(platform);
+            string authString = clientId + ":" + secretId;
+            string authBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(authString));
+            var accessToken = tidal.FirstOrDefault() ?? new Model.serviceProviderToken.ServiceProviderToken();
+
+            if (accessToken.accessToken == null)
+            {
+                var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "https://auth.tidal.com/v1/oauth2/token");
+                tokenRequest.Headers.Authorization = new AuthenticationHeaderValue("Basic", authBase64);
+                tokenRequest.Content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string,string>("grant_type","client_credentials")
+                });
+                var response = await _httpClient.SendAsync(tokenRequest);
+                accessToken = await _serviceProviderToken.AddTidalAccessToken(response, platform);
+            }
+            if(DateTime.UtcNow > accessToken.expiresIn)
+            {
+                var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "https://auth.tidal.com/v1/oauth2/token");
+                tokenRequest.Headers.Authorization = new AuthenticationHeaderValue("Basic", authBase64);
+                tokenRequest.Content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string,string>("grant_type","client_credentials")
+                });
+                var response = await _httpClient.SendAsync(tokenRequest);
+                accessToken = await _serviceProviderToken.RefreshTidalAccessToken(response, accessToken);
+            }
+
+            var apiRequest = new HttpRequestMessage(HttpMethod.Get, request);
+            apiRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.accessToken);
+            var result = await _httpClient.SendAsync(apiRequest);
+
+            var json = await result.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(json);
+            var thumbnail = doc.RootElement
+              .GetProperty("included")[0]
+              .GetProperty("attributes")
+              .GetProperty("files")[0]
+              .GetProperty("href")
+              .GetString();
+
+            return thumbnail;
+        }
+
+        // For future updates, some of this is not available yet and some is need to be bought/enrolled
+        public async Task<string> GetSpotifyThumbnail()
+        {
+            return string.Empty;
+        }
+
+        public async Task<string> GetAppleMusicThumbnail()
+        {
+            return string.Empty;
+        }
+
+        public async Task<string> GetAmazonMusicThumbnail()
+        {
+            return string.Empty;
         }
     }
 }

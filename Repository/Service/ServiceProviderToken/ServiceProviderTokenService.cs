@@ -13,9 +13,10 @@ namespace tunepool.Repository.Service.serviceProviderTokenService
             _context = context;
         }
 
-        public async Task<List<ServiceProviderToken>> GetSoundCloudAccessToken()
+        public async Task<List<ServiceProviderToken>> GetAccessToken(string platform)
         {
-            return await _context.ServiceProviderToken.ToListAsync();
+
+            return await _context.ServiceProviderToken.Where(p => p.platform.name == platform).ToListAsync();
         }
 
         public async Task<ServiceProviderToken> AddSoundCloudAccessToken(HttpResponseMessage response, string platform)
@@ -48,6 +49,42 @@ namespace tunepool.Repository.Service.serviceProviderTokenService
 
             accessToken.accessToken = doc.RootElement.GetProperty("access_token").GetString();
             accessToken.refreshToken = doc.RootElement.GetProperty("refresh_token").GetString();
+            int expiresIn = doc.RootElement.GetProperty("expires_in").GetInt32();
+            var totalExpiration = DateTime.UtcNow.AddSeconds(expiresIn);
+
+            await _context.SaveChangesAsync();
+
+            return accessToken;
+        }
+
+        public async Task<ServiceProviderToken> AddTidalAccessToken(HttpResponseMessage response, string platform)
+        {
+            var platformId = _context.PlatForm.Where(p => p.name == platform).Select(p => p.Id).FirstOrDefault();
+            var json = await response.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(json);
+            int expiresIn = doc.RootElement.GetProperty("expires_in").GetInt32();
+            var totalExpiration = DateTime.UtcNow.AddSeconds(expiresIn);
+            var accessToken = new ServiceProviderToken
+            {
+                accessToken = doc.RootElement.GetProperty("access_token").GetString(),
+                expiresIn = totalExpiration,
+                platformId = platformId,
+                createdAt = DateTime.UtcNow
+            };
+
+            _context.Add(accessToken);
+
+            await _context.SaveChangesAsync();
+
+            return accessToken;
+        }
+
+        public async Task<ServiceProviderToken> RefreshTidalAccessToken(HttpResponseMessage response, ServiceProviderToken accessToken)
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(json);
+
+            accessToken.accessToken = doc.RootElement.GetProperty("access_token").GetString();
             int expiresIn = doc.RootElement.GetProperty("expires_in").GetInt32();
             var totalExpiration = DateTime.UtcNow.AddSeconds(expiresIn);
 

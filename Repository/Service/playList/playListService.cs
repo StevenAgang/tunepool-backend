@@ -52,6 +52,11 @@ namespace tunepool.Repository.Service.PlaylistService
 
         public async Task Add(string link, string title, string description, string[] tags, string thumbnail, string platform)
         {
+            var exisit = _context.Playlist.Where(p => p.playList_Urls == link).ToList();
+
+            if (exisit != null) throw new Exception("Playlist already exist");
+
+
             var platformId = _context.PlatForm.FirstOrDefault(p => p.name == platform);
             var tagsList = _context.Tags.Where(p => tags.Contains(p.name)).ToList();
             var playlist = new Playlist
