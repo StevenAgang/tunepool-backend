@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tunepool.Repository;
 
@@ -11,9 +12,11 @@ using tunepool.Repository;
 namespace tunepool.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260129170648_add service provider token and service")]
+    partial class addserviceprovidertokenandservice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -113,24 +116,19 @@ namespace tunepool.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("accessToken")
+                    b.Property<string>("SCaccessToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SCexpiresIn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SCrefreshToken")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("createdAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("expiresIn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("platformId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("refreshToken")
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("platformId");
 
                     b.ToTable("ServiceProviderToken");
                 });
@@ -193,17 +191,6 @@ namespace tunepool.Migrations
                         .IsRequired();
 
                     b.Navigation("Playlist");
-                });
-
-            modelBuilder.Entity("tunepool.Repository.Model.serviceProviderToken.ServiceProviderToken", b =>
-                {
-                    b.HasOne("tunepool.Repository.Model.platform.Platform", "platform")
-                        .WithMany()
-                        .HasForeignKey("platformId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("platform");
                 });
 
             modelBuilder.Entity("tunepool.Repository.Model.playlist.Playlist", b =>

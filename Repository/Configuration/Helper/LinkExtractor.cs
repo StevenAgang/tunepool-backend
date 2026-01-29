@@ -1,17 +1,21 @@
-﻿using Azure.Core;
+﻿using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
+using tunepool.Repository.Interface.serviceProviderTokenInterface;
 
 namespace tunepool.Repository.Configuration.Helper
 {
     public class LinkExtractor
     {
         private HttpClient _httpClient;
+        private IServiceProviderToken _serviceProviderToken;
 
-        public LinkExtractor(HttpClient httpClient)
+        public LinkExtractor(HttpClient httpClient, IServiceProviderToken serviceProviderToken)
+           
         {
             _httpClient = httpClient;
+            _serviceProviderToken = serviceProviderToken;
         }
 
         public string Domain(string link)
@@ -60,20 +64,44 @@ namespace tunepool.Repository.Configuration.Helper
 
         public async Task<string> Thumbnails(string link, string platform)
         {
-            string key = "";
+            Random rand = new Random();
+            string[] defaultThumbnail =
+            {
+                "https://res.cloudinary.com/dwwjrds1j/image/upload/v1769688753/7082431_dsxuee.jpg",
+                "https://res.cloudinary.com/dwwjrds1j/image/upload/v1769688495/autumn-scene-street-food-stall-with-customers_bzmrmq.jpg",
+                "https://res.cloudinary.com/dwwjrds1j/image/upload/v1769688490/asdasdasd_jzdmvb.jpg",
+                "https://res.cloudinary.com/dwwjrds1j/image/upload/v1769688487/couple-bus-sunset_myzpgw.jpg",
+                "https://res.cloudinary.com/dwwjrds1j/image/upload/v1769688485/nature-landscape-hawaii-with-digital-art-style_a8ojtg.jpg",
+                "https://res.cloudinary.com/dwwjrds1j/image/upload/v1769688485/lifestyle-scene-with-people-doing-regular-tasks-anime-style_lqocag.jpg",
+                "https://res.cloudinary.com/dwwjrds1j/image/upload/v1769689018/8-bit-graphics-pixels-scene-with-person-bench-sunset_rdxrjg.jpg",
+                "https://res.cloudinary.com/dwwjrds1j/image/upload/v1769688485/anime-style-house-architecture_b4nr2t.jpg",
+                "https://res.cloudinary.com/dwwjrds1j/image/upload/v1769688481/7082421_suxim7.jpg",
+                "https://res.cloudinary.com/dwwjrds1j/image/upload/v1769688481/6884605_yysz29.jpg"
+            };
+            int index = rand.Next(0, defaultThumbnail.Length);
             string request = "";
             string id = ExtractPlaylistID(link,platform);
-            if (platform == "Youtube")
+            if (platform == "Youtube" || platform == "Youtube Music")
             {
-                key = Environment.GetEnvironmentVariable("YTAPIKEY")!;
+                string key = Environment.GetEnvironmentVariable("YTAPIKEY")!;
                 request = "https://youtube.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&id=";
                 request += id + "&key=" + key;
-                return await GetYoutubeThumbnails(request);
+                return await GetYoutubeThumbnail(request);
             }
-            throw new Exception("Unsupported Platform");
+            if (platform == "Sound Cloud")
+            {
+                string clientId = Environment.GetEnvironmentVariable("SCCLIENTID")!;
+                string secretId = Environment.GetEnvironmentVariable("SCSECRETID")!;
+
+                string escapeUrl = Uri.EscapeDataString(link);
+                request = $"https://api.soundcloud.com/resolve?url={escapeUrl}" ;
+                return await GetSoundCloudThumbnail(request, clientId, secretId, platform);
+
+            }
+            return defaultThumbnail[index];
         }
 
-        public async Task<string> GetYoutubeThumbnails(string request)
+        public async Task<string> GetYoutubeThumbnail(string request)
         {
             var result = await _httpClient.GetAsync(request);
             result.EnsureSuccessStatusCode();
@@ -88,6 +116,64 @@ namespace tunepool.Repository.Configuration.Helper
                 .GetString()!;
 
             return thumbail;
+        }
+
+        public async Task<string> GetSpotifyThumbnail()
+        {
+            return string.Empty;
+        }
+
+        public async Task<string> GetSoundCloudThumbnail(string request, string clientId, string secretId, string platform)
+        {
+
+            var soundCloud = await _serviceProviderToken.GetSoundCloudAccessToken();
+            string authString = clientId + ":" + secretId;
+            string authBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(authString));
+            var accessToken = soundCloud.FirstOrDefault() ?? new Model.serviceProviderToken.ServiceProviderToken();
+            if(accessToken?.accessToken == null)
+            {
+                var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "https://secure.soundcloud.com/oauth/token");
+                tokenRequest.Headers.Authorization = new AuthenticationHeaderValue("Basic", authBase64);
+                tokenRequest.Content = new FormUrlEncodedContent(new[]
+                {
+                        new KeyValuePair<string, string>("grant_type","client_credentials")
+                });
+                var response = await _httpClient.SendAsync(tokenRequest);
+                accessToken = await _serviceProviderToken.AddSoundCloudAccessToken(response, platform);
+            }
+            if (DateTime.UtcNow > accessToken.expiresIn)
+            {
+                var refreshTokenRequest = new HttpRequestMessage(HttpMethod.Post, "https://secure.soundcloud.com/oauth/token");
+                refreshTokenRequest.Content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("grant_type","refresh_token"),
+                    new KeyValuePair<string, string>("client_id",clientId),
+                    new KeyValuePair<string, string>("client_secret",secretId),
+                    new KeyValuePair<string, string>("refresh_token",accessToken.refreshToken!)
+                });
+
+                var response = await _httpClient.SendAsync(refreshTokenRequest);
+                accessToken = await _serviceProviderToken.RefreshSoundCloudAccessToken(response, accessToken);
+            }
+
+            var apiRequest = new HttpRequestMessage(HttpMethod.Get, request);
+            apiRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.accessToken);
+            var result = await _httpClient.SendAsync(apiRequest);
+
+            // If 302 redirect, follow manually
+            if (result.StatusCode == System.Net.HttpStatusCode.Redirect || result.StatusCode == System.Net.HttpStatusCode.MovedPermanently)
+            {
+                var redirectUrl = result.Headers.Location.ToString();
+                var redirectRequest = new HttpRequestMessage(HttpMethod.Get, redirectUrl);
+                redirectRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.accessToken);
+
+                result = await _httpClient.SendAsync(redirectRequest);
+            }
+
+            var json = await result.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(json);
+            var thumbnail = doc.RootElement.GetProperty("artwork_url").GetString();
+            return thumbnail;
         }
     }
 }

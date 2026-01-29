@@ -61,7 +61,7 @@ namespace tunepool.Repository.Service.PlaylistService
                 playList_Urls = link,
                 platform_id = platformId!.Id,
                 thumbnail = thumbnail,
-                createdAt = DateTime.Now
+                createdAt = DateTime.UtcNow
             };
 
             _context.Add(playlist);

@@ -3,8 +3,10 @@ using tunepool.Repository;
 using tunepool.Repository.Configuration.Helper;
 using tunepool.Repository.Interface.playlistInterface;
 using tunepool.Repository.Interface.popularityInterface;
+using tunepool.Repository.Interface.serviceProviderTokenInterface;
 using tunepool.Repository.Service.PlaylistService;
 using tunepool.Repository.Service.popularityService;
+using tunepool.Repository.Service.serviceProviderTokenService;
 using tunepool.Repository.Service.Validation.Playlist;
 
 namespace tunepool
@@ -19,6 +21,7 @@ namespace tunepool
             //Scoped Service
             builder.Services.AddScoped<IPlaylistService, PlaylistService>();
             builder.Services.AddScoped<IPopularityService, PopularityService>();
+            builder.Services.AddScoped<IServiceProviderToken, ServiceProviderTokenService>();
 
             //Singleton Service
             builder.Services.AddSingleton<RequestStatusHelper >();
@@ -29,7 +32,11 @@ namespace tunepool
 
             builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlServer(connection));
 
-            builder.Services.AddHttpClient<LinkExtractor>();
+            builder.Services.AddHttpClient<LinkExtractor>()
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                AllowAutoRedirect = false
+            });
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

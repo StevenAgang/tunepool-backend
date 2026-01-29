@@ -3,6 +3,7 @@ using tunepool.Repository.Model.platform;
 using tunepool.Repository.Model.playlist;
 using tunepool.Repository.Model.playlistTags;
 using tunepool.Repository.Model.popularity;
+using tunepool.Repository.Model.serviceProviderToken;
 using tunepool.Repository.Model.tags;
 
 namespace tunepool.Repository
@@ -16,6 +17,7 @@ namespace tunepool.Repository
         public DbSet<Popularity> Popularity { get; set; }
         public DbSet<Tags> Tags { get; set; }
         public DbSet<PlaylistTags> PlaylistTags { get; set; }
+        public DbSet<ServiceProviderToken> ServiceProviderToken { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Popularity>()
@@ -38,6 +40,11 @@ namespace tunepool.Repository
                 .HasOne(pt => pt.Tags)
                 .WithMany(p => p.PlaylistTags)
                 .HasForeignKey(pt => pt.tags_id);
+
+            modelBuilder.Entity<ServiceProviderToken>()
+                .HasOne(p => p.platform)
+                .WithMany()
+                .HasForeignKey(p => p.platformId);
 
             base.OnModelCreating(modelBuilder);
         }

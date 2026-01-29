@@ -21,4 +21,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Repository\Configuration\Access Token\" />
+  </ItemGroup>
+
 </Project>
