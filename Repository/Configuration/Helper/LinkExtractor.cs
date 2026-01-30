@@ -113,6 +113,12 @@ namespace tunepool.Repository.Configuration.Helper
                 request = $"https://openapi.tidal.com/v2/playlists/{id}?include=coverArt";
                 thumbanail = await GetTidalThumbnail(request,clientId,secretId,platform);
             }
+            if (platform == "Spotify")
+            {
+                string bearer = Environment.GetEnvironmentVariable("SPTYKEY")!;
+                request = $"https://api.spotify.com/v1/playlists/{id}";
+                thumbanail = await GetSpotifyThumbnail(request, bearer, platform);
+            }
             if (string.IsNullOrEmpty(thumbanail))
             {
                 return defaultThumbnail[index];
@@ -245,12 +251,19 @@ namespace tunepool.Repository.Configuration.Helper
             return thumbnail;
         }
 
-        // For future updates, some of this is not available yet and some is need to be bought/enrolled
-        public async Task<string> GetSpotifyThumbnail()
+        public async Task<string> GetSpotifyThumbnail(string request, string bearer, string platform)
         {
-            return string.Empty;
+            var apiReuqest = new HttpRequestMessage(HttpMethod.Get, request);
+            apiReuqest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+
+            var result = await _httpClient.SendAsync(apiReuqest);
+            var json = await result.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(json);
+            var thumbnail = doc.RootElement.GetProperty("images")[0].GetProperty("url").GetString();
+            return thumbnail;
         }
 
+        // For future updates, some of this is not available yet and some is need to be bought/enrolled
         public async Task<string> GetAppleMusicThumbnail()
         {
             return string.Empty;

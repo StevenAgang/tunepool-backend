@@ -16,6 +16,16 @@ namespace tunepool
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("FrontEnd", policy =>
+                {
+                    policy.WithOrigins("https://localhost:4200", "http://localhost:4200")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+                });
+            });
             // Add services to the container.
 
             //Scoped Service
@@ -42,7 +52,7 @@ namespace tunepool
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
-
+            app.UseCors("FrontEnd");
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
@@ -53,7 +63,6 @@ namespace tunepool
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 

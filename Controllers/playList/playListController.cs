@@ -35,7 +35,7 @@ namespace tunepool.Controllers.playList
             try
             {
                 var result = await _playListService.All();
-                return StatusCode(500, _requestStatusHelper.Success(200, true, null, result));
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, result));
             }
             catch (Exception ex)
             {
@@ -60,7 +60,7 @@ namespace tunepool.Controllers.playList
             }
         }
 
-        [HttpPost("LikePlaylist")]
+        [HttpPut("LikePlaylist")]
         public async Task<IActionResult> LikePlaylist(int playListId)
         {
             try
@@ -74,7 +74,7 @@ namespace tunepool.Controllers.playList
             }
         }
 
-        [HttpPost("HeartsPlaylist")]
+        [HttpPut("HeartsPlaylist")]
         public async Task<IActionResult> HeartsPlaylist(int playlistId)
         {
             try
