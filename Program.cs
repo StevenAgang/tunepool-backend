@@ -2,10 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using tunepool.Repository;
 using tunepool.Repository.Configuration.Helper;
 using tunepool.Repository.Interface.playlistInterface;
-using tunepool.Repository.Interface.popularityInterface;
 using tunepool.Repository.Interface.serviceProviderTokenInterface;
 using tunepool.Repository.Service.PlaylistService;
-using tunepool.Repository.Service.popularityService;
 using tunepool.Repository.Service.serviceProviderTokenService;
 using tunepool.Repository.Service.Validation.Playlist;
 
@@ -30,7 +28,6 @@ namespace tunepool
 
             //Scoped Service
             builder.Services.AddScoped<IPlaylistService, PlaylistService>();
-            builder.Services.AddScoped<IPopularityService, PopularityService>();
             builder.Services.AddScoped<IServiceProviderToken, ServiceProviderTokenService>();
 
             //Singleton Service

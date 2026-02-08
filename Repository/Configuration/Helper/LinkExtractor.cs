@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Linq.Expressions;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -117,8 +118,9 @@ namespace tunepool.Repository.Configuration.Helper
             {
                 string bearer = Environment.GetEnvironmentVariable("SPTYKEY")!;
                 request = $"https://api.spotify.com/v1/playlists/{id}";
-                thumbanail = await GetSpotifyThumbnail(request, bearer, platform);
+                thumbanail = await GetSpotifyThumbnail(request, bearer, platform, defaultThumbnail, index);
             }
+            
             if (string.IsNullOrEmpty(thumbanail))
             {
                 return defaultThumbnail[index];
@@ -129,7 +131,6 @@ namespace tunepool.Repository.Configuration.Helper
         public async Task<string> GetYoutubeThumbnail(string request)
         {
             var result = await _httpClient.GetAsync(request);
-            result.EnsureSuccessStatusCode();
             string body = await result.Content.ReadAsStringAsync();
             var doc = JsonDocument.Parse(body);
             string thumbail = doc.RootElement
@@ -251,16 +252,21 @@ namespace tunepool.Repository.Configuration.Helper
             return thumbnail;
         }
 
-        public async Task<string> GetSpotifyThumbnail(string request, string bearer, string platform)
+        public async Task<string> GetSpotifyThumbnail(string request, string bearer, string platform, string[] defaultThumbnail, int randomNumber)
         {
+
             var apiReuqest = new HttpRequestMessage(HttpMethod.Get, request);
             apiReuqest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
 
             var result = await _httpClient.SendAsync(apiReuqest);
             var json = await result.Content.ReadAsStringAsync();
             var doc = JsonDocument.Parse(json);
-            var thumbnail = doc.RootElement.GetProperty("images")[0].GetProperty("url").GetString();
-            return thumbnail;
+            bool exist = doc.RootElement.TryGetProperty("images", out JsonElement images);
+            if (exist)
+            {
+                return doc.RootElement.GetProperty("images")[0].GetProperty("url").GetString();
+            }
+            return defaultThumbnail[randomNumber];
         }
 
         // For future updates, some of this is not available yet and some is need to be bought/enrolled

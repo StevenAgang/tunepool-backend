@@ -10,5 +10,6 @@ namespace tunepool.Repository.Model.popularity
         public Playlist? Playlist { get; set; }
         public int likes { get; set; }
         public int hearts { get; set; }
+        public int rank { get; set; }
     }
 }

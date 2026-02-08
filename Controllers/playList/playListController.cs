@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Sprache;
 using tunepool.Repository.Configuration.Helper;
 using tunepool.Repository.Interface.playlistInterface;
-using tunepool.Repository.Interface.popularityInterface;
 using tunepool.Repository.Service.Validation.Playlist;
+using tunepool.Repository.ViewModel.playlistViewModel;
+using tunepool.Repository.ViewModel.popularityViewModel;
 
 namespace tunepool.Controllers.playList
 {
@@ -14,32 +16,57 @@ namespace tunepool.Controllers.playList
         private IPlaylistService _playListService;
         private PlaylistValidation _playlistValidation;
         private LinkExtractor _linkExtractor;
-        private IPopularityService _popularityService;
         public PlaylistController(
             RequestStatusHelper requestStatusHelper, 
             IPlaylistService iplayListService, 
             PlaylistValidation playlistValidation, 
-            LinkExtractor linkExtractor, 
-            IPopularityService popularityService)
+            LinkExtractor linkExtractor)
         {
             _requestStatusHelper = requestStatusHelper;
             _playListService = iplayListService;
             _playlistValidation = playlistValidation;
             _linkExtractor = linkExtractor;
-            _popularityService = popularityService;
         }
 
         [HttpGet("GetAllPlaylist")]
-        public async Task<IActionResult> GetAllPlaylist()
+        public async Task<IActionResult> GetAllPlaylist(int lastId)
         {
             try
             {
-                var result = await _playListService.All();
+                var result = await _playListService.All(lastId);
                 return StatusCode(200, _requestStatusHelper.Success(200, true, null, result));
             }
             catch (Exception ex)
             {
                 return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message,null));
+            }
+        }
+
+        [HttpGet("GetRanking")]
+        public async Task<IActionResult> GetRanking()
+        {
+            try
+            {
+                var result = await _playListService.PlaylistRanking();
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, result));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null));
+            }
+        }
+
+        [HttpGet("GetAllTags")]
+        public async Task<IActionResult> GetAllTags()
+        {
+            try
+            {
+                var result = await _playListService.GetAllTags();
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, result));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null));
             }
         }
 
@@ -61,11 +88,11 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpPut("LikePlaylist")]
-        public async Task<IActionResult> LikePlaylist(int playListId)
+        public async Task<IActionResult> LikePlaylist([FromBody] PopularityViewModel playlist)
         {
             try
             {
-                await _popularityService.Like(playListId);
+                await _playListService.Like(playlist);
                 return StatusCode(200, _requestStatusHelper.Success(200, true, null, null));
             }
             catch (Exception ex)
@@ -74,12 +101,13 @@ namespace tunepool.Controllers.playList
             }
         }
 
-        [HttpPut("HeartsPlaylist")]
-        public async Task<IActionResult> HeartsPlaylist(int playlistId)
+        [HttpPut("HeartPlaylist")]
+        public async Task<IActionResult> HeartsPlaylist([FromBody] PopularityViewModel playlist)
         {
             try
             {
-                await _popularityService.Hearts(playlistId);
+                await 
+                    _playListService.Hearts(playlist);
                 return StatusCode(200, _requestStatusHelper.Success(200, true, null, null));
             }
             catch (Exception ex)
@@ -87,5 +115,6 @@ namespace tunepool.Controllers.playList
                 return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null));
             }
         }
+
     }
 }
