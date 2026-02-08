@@ -33,12 +33,17 @@ namespace tunepool.Controllers.playList
         {
             try
             {
-                var result = await _playListService.All(lastId);
-                return StatusCode(200, _requestStatusHelper.Success(200, true, null, result));
+                var result = await _playListService.All();
+
+                var pages = _playListService.SlicePage(result,lastId);
+
+                var lastPageStatus = _playListService.CheckLastPage(result, lastId);
+
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, pages, lastPageStatus));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message,null));
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message,null, null));
             }
         }
 
@@ -48,11 +53,11 @@ namespace tunepool.Controllers.playList
             try
             {
                 var result = await _playListService.PlaylistRanking();
-                return StatusCode(200, _requestStatusHelper.Success(200, true, null, result));
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, result, null));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null));
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null, null));
             }
         }
 
@@ -62,11 +67,11 @@ namespace tunepool.Controllers.playList
             try
             {
                 var result = await _playListService.GetAllTags();
-                return StatusCode(200, _requestStatusHelper.Success(200, true, null, result));
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, result, null));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null));
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null, null));
             }
         }
 
@@ -79,11 +84,11 @@ namespace tunepool.Controllers.playList
                 string platform =  _linkExtractor.Domain(link);
                 string thumbnail = await _linkExtractor.Thumbnails(link,platform);
                 await _playListService.Add(link, title, description, tags, thumbnail, platform);
-                return StatusCode(200, _requestStatusHelper.Success(200, true, "Playlist Added Successfully", null));
+                return StatusCode(200, _requestStatusHelper.Success(200, true, "Playlist Added Successfully", null, null));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, _requestStatusHelper.Success(500,false,ex.Message,null));
+                return StatusCode(500, _requestStatusHelper.Success(500,false,ex.Message,null, null));
             }
         }
 
@@ -93,11 +98,11 @@ namespace tunepool.Controllers.playList
             try
             {
                 await _playListService.Like(playlist);
-                return StatusCode(200, _requestStatusHelper.Success(200, true, null, null));
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, null, null));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null));
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null, null));
             }
         }
 
@@ -108,11 +113,11 @@ namespace tunepool.Controllers.playList
             {
                 await 
                     _playListService.Hearts(playlist);
-                return StatusCode(200, _requestStatusHelper.Success(200, true, null, null));
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, null, null));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null));
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null, null));
             }
         }
 

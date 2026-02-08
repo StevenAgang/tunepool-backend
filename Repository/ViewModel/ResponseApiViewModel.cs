@@ -10,5 +10,7 @@ namespace tunepool.Repository.ViewModel
         public string? Message { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public object? Content { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? lastPage { get; set; }
     }
 }

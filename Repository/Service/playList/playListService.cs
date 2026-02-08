@@ -20,53 +20,58 @@ namespace tunepool.Repository.Service.PlaylistService
             _context = context;
         }
 
-        // Continue: Find a way to properly send to client if the current page is the last page
-
         #region Get
-        public async Task<List<PlaylistViewModel>> All(int lastId)
+        public async Task<List<PlaylistViewModel>> All()
         {
-            bool lastPage = false;
-
-            var playlists = await _context.Playlist
+            var playlist = await _context.Playlist
                 .Include(p => p.Platform)
                 .Include(p => p.Popularity)
                 .Include(p => p.PlaylistTags)
                 .ThenInclude(pt => pt.Tags)
                 .Where(p => p.Popularity.Any(a => a.rank == 0))
-                .ToListAsync();
-
-            if (lastId != 0) playlists = playlists.Where(p => p.Id > lastId).ToList();
-
-            var nextPage = playlists.Where(P => P.Id > lastId + 10).ToList();
-
-            if (nextPage.Count == 0) lastPage = true;
-
-            if(playlists.Count == 0) throw new Exception("No more data to show");
-
-
-            var list = playlists.Take(10).Select(p => new PlaylistViewModel
-            {
-                id = p.Id,
-                title = p.title,
-                description = p.description,
-                playList_Urls = p.playList_Urls,
-                thumbnail = p.thumbnail,
-                Tags = p.PlaylistTags!.Select(t => new TagsViewModel
-                {
-                    id = t.tags_id,
-                    name = t.Tags!.name
-                }).ToList(),
-                Popularity = p.Popularity!.Select(pop => new PopularityViewModel
-                {
-                    playlist_id = p.Id,
-                    likes = pop.likes,
-                    hearts = pop.hearts,
-                    rank = pop.rank
-                }).ToList(),
-                Platform = new PlatformViewModel { Id = p.Id, name = p.Platform!.name },
-            }).ToList();
+                .Select(p => new PlaylistViewModel
+                    {
+                    id = p.Id,
+                    title = p.title,
+                    description = p.description,
+                    playList_Urls = p.playList_Urls,
+                    thumbnail = p.thumbnail,
+                    Tags = p.PlaylistTags!.Select(t => new TagsViewModel
+                    {
+                        id = t.tags_id,
+                        name = t.Tags!.name
+                    }).ToList(),
+                    Popularity = p.Popularity!.Select(pop => new PopularityViewModel
+                    {
+                        playlist_id = p.Id,
+                        likes = pop.likes,
+                        hearts = pop.hearts,
+                        rank = pop.rank
+                    }).ToList(),
+                    Platform = new PlatformViewModel { Id = p.Id, name = p.Platform!.name },
+            }).ToListAsync();
   
+            return playlist;
+        }
+
+        public List<PlaylistViewModel> SlicePage(List<PlaylistViewModel> playlist, int lastId)
+        {
+            var list = playlist.Where(p => p.id > lastId).Take(10).ToList();
+
             return list;
+        }
+
+        public bool CheckLastPage(List<PlaylistViewModel> playlist, int lastId)
+        {
+            var list = new List<PlaylistViewModel>();
+
+            bool nextPage = false;
+
+            list = playlist.Where(p => p.id > lastId + 10).ToList();
+
+            if (list.Count == 0) nextPage = true;
+
+            return nextPage;
         }
 
         public async Task<List<PlaylistViewModel>> PlaylistRanking()

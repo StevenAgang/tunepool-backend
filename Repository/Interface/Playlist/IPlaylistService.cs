@@ -10,7 +10,11 @@ namespace tunepool.Repository.Interface.playlistInterface
         /// Return all Playlist
         /// </summary>
         /// <returns>Returns a set of Playlist</returns>
-        Task<List<PlaylistViewModel>> All(int lastId);
+        Task<List<PlaylistViewModel>> All();
+
+        List<PlaylistViewModel> SlicePage(List<PlaylistViewModel> playlist, int lastId);
+
+        bool CheckLastPage(List<PlaylistViewModel> playlist, int lastId);
 
         Task<List<PlaylistViewModel>> PlaylistRanking();
 
