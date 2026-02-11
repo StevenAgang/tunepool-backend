@@ -19,7 +19,7 @@ namespace tunepool
             {
                 options.AddPolicy("FrontEnd", policy =>
                 {
-                    policy.WithOrigins("https://localhost:4200", "http://localhost:4200")
+                    policy.WithOrigins("https://localhost:4200", "http://localhost:4200", "http://192.168.31.190:4200", "https://192.168.31.190:4200", "http://172.28.144.1:4200/", "https://172.28.144.1:4200/")
                     .AllowAnyHeader()
                     .AllowAnyMethod();
                 });
@@ -33,11 +33,9 @@ namespace tunepool
             //Singleton Service
             builder.Services.AddSingleton<RequestStatusHelper >();
             builder.Services.AddSingleton<PlaylistValidation>();
+            builder.Services.AddHostedService<Polling>();
 
-            DotNetEnv.Env.TraversePath().Load();
-            var connection = Environment.GetEnvironmentVariable("CONNECTIONSTRING");
-
-            builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlServer(connection));
+            builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             builder.Services.AddHttpClient<LinkExtractor>()
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler

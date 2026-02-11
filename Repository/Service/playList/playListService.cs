@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
+using System.Timers;
 using tunepool.Repository.Interface.playlistInterface;
-using tunepool.Repository.Model.platform;
 using tunepool.Repository.Model.playlist;
 using tunepool.Repository.Model.playlistTags;
 using tunepool.Repository.Model.popularity;
@@ -21,14 +20,17 @@ namespace tunepool.Repository.Service.PlaylistService
         }
 
         #region Get
-        public async Task<List<PlaylistViewModel>> All()
+        public async Task<List<PlaylistViewModel>> All(int? lastId, string? metaData, int? platform, int? tags)
         {
+            if(lastId == 0)
+            {
+                lastId = await _context.Playlist.CountAsync() + 1;
+            } 
+
             var playlist = await _context.Playlist
-                .Include(p => p.Platform)
-                .Include(p => p.Popularity)
-                .Include(p => p.PlaylistTags)
-                .ThenInclude(pt => pt.Tags)
-                .Where(p => p.Popularity.Any(a => a.rank == 0))
+                .AsNoTracking()
+                .Where(p => p.Id < lastId && p.Popularity.Any(a => a.rank == 0) &&( metaData == null || p.title.Contains(metaData) || p.description.Contains(metaData)) && ( platform == null || p.platform_id == platform) && ( tags == null || p.PlaylistTags.Any(t => t.tags_id == tags)))
+                .OrderByDescending(p => p.Id)
                 .Select(p => new PlaylistViewModel
                     {
                     id = p.Id,
@@ -49,39 +51,24 @@ namespace tunepool.Repository.Service.PlaylistService
                         rank = pop.rank
                     }).ToList(),
                     Platform = new PlatformViewModel { Id = p.Id, name = p.Platform!.name },
-            }).ToListAsync();
+            }).Take(10).ToListAsync();
   
             return playlist;
         }
 
-        public List<PlaylistViewModel> SlicePage(List<PlaylistViewModel> playlist, int lastId)
+        public async Task<bool> CheckNextPage(int? lastId, string? metaData, int? platform, int? tags)
         {
-            var list = playlist.Where(p => p.id > lastId).Take(10).ToList();
+            var status = await _context.Playlist.AsNoTracking().AnyAsync(p => p.Id < lastId && p.Popularity.Any(a => a.rank == 0) && (metaData == null || p.title.Contains(metaData) || p.description.Contains(metaData)) && (platform == null || p.platform_id == platform) && (tags == null || p.PlaylistTags.Any(t => t.tags_id == tags)));
 
-            return list;
-        }
-
-        public bool CheckLastPage(List<PlaylistViewModel> playlist, int lastId)
-        {
-            var list = new List<PlaylistViewModel>();
-
-            bool nextPage = false;
-
-            list = playlist.Where(p => p.id > lastId + 10).ToList();
-
-            if (list.Count == 0) nextPage = true;
-
-            return nextPage;
+            return status;
         }
 
         public async Task<List<PlaylistViewModel>> PlaylistRanking()
         {
             var Playlist = await _context.Playlist
-                .Include(p => p.Platform)
-                .Include(p => p.Popularity)
-                .Include(p => p.PlaylistTags)
-                .ThenInclude(pt => pt.Tags)
+                .AsNoTracking()
                 .Where(p => p.Popularity.Any(a => a.rank != 0))
+                .OrderBy(p => p.Popularity.Max(a => a.rank))
                 .Select(p => new PlaylistViewModel
                 {
                     id = p.Id,
@@ -109,30 +96,40 @@ namespace tunepool.Repository.Service.PlaylistService
 
         public async Task<List<TagsViewModel>> GetAllTags()
         {
-            var tags = await _context.Tags.Select(t => new TagsViewModel
+            var tags = await _context.Tags.AsNoTracking().Select(t => new TagsViewModel
             {
                 id = t.Id,
                 name = t.name
             }).ToListAsync();
             return tags;
         }
+
+        public async Task<List<PlatformViewModel>> GetAllPlatform()
+        {
+            var platform = await _context.PlatForm.AsNoTracking().Select(p => new PlatformViewModel
+            {
+                Id = p.Id,
+                name = p.name
+            }).ToListAsync();
+            return platform;
+        }
         #endregion
 
         #region Add
-        public async Task Add(string link, string title, string description, string[] tags, string thumbnail, string platform)
+        public async Task Add(PlaylistRequestModel list, string thumbnail, string platform)
         {
-            var exisit = _context.Playlist.Where(p => p.playList_Urls == link).ToList();
+            var exisit = await _context.Playlist.Where(p => p.playList_Urls == list.playList_Urls).ToListAsync();
 
             if (exisit.Count != 0) throw new Exception("Playlist already exist");
 
 
             var platformId = _context.PlatForm.FirstOrDefault(p => p.name == platform);
-            var tagsList = _context.Tags.Where(p => tags.Contains(p.name)).ToList();
+            var tagsList = await _context.Tags.Where(p => list.tags.Contains(p.Id)).ToListAsync();
             var playlist = new Playlist
             {
-                title = title,
-                description = description,
-                playList_Urls = link,
+                title = list.title,
+                description = list.description,
+                playList_Urls = list.playList_Urls,
                 platform_id = platformId!.Id,
                 thumbnail = thumbnail,
                 createdAt = DateTime.UtcNow
@@ -164,22 +161,56 @@ namespace tunepool.Repository.Service.PlaylistService
         #endregion
 
         #region Update
-        public async Task Like(PopularityViewModel playlist)
+        public async Task Like(int playlistId)
         {
-            var total = await _context.Popularity.FindAsync(playlist.playlist_id);
+            var total = await _context.Popularity.FindAsync(playlistId);
             total!.likes += 1;
 
             await _context.SaveChangesAsync();
         }
 
-        public async Task Hearts(PopularityViewModel playlist)
+        public async Task Hearts(int playlistId)
         {
-            var total = await _context.Popularity.FindAsync(playlist.playlist_id);
-
+            var total = await _context.Popularity.FindAsync(playlistId);
             total!.hearts += 1;
 
             await _context.SaveChangesAsync();
         }
         #endregion
+
+        public async Task Unlike(int playlistId)
+        {
+            var total = await _context.Popularity.FindAsync(playlistId);
+            total!.likes -= 1;
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task Unheart(int playlistId)
+        {
+            var total = await _context.Popularity.FindAsync(playlistId);
+            total!.hearts -= 1;
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task WeeklyRanking()
+        {
+            var resetOldRank = await _context.Database.ExecuteSqlRawAsync("UPDATE Popularity SET rank = 0");
+
+            var updatedrank = await _context.Popularity
+                .OrderByDescending(p => p.hearts + p.likes)
+                .ThenByDescending(p => p.hearts)
+                .Take(3)
+                .ToListAsync();
+
+            updatedrank.ForEach(p => p.rank = 0);
+            updatedrank[0].rank = 1;
+            updatedrank[1].rank = 2;
+            updatedrank[2].rank = 3;
+
+            _context.UpdateRange(updatedrank);
+            await _context.SaveChangesAsync();
+        }
     }
 }

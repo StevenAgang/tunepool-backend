@@ -10,6 +10,6 @@ namespace tunepool.Repository.Model.serviceProviderToken
         public string? refreshToken { get; set; }
         [ForeignKey("platform")]
         public int platformId { get; set; }
-        public Platform? platform { get; set; }
+        public Platform platform { get; set; } = null!;
     }
 }

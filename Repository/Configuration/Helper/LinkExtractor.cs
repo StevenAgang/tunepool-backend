@@ -11,27 +11,27 @@ namespace tunepool.Repository.Configuration.Helper
     public class LinkExtractor
     {
         private HttpClient _httpClient;
-        private IServiceProviderToken _serviceProviderToken;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public LinkExtractor(HttpClient httpClient, IServiceProviderToken serviceProviderToken)
+        public LinkExtractor(HttpClient httpClient, IServiceScopeFactory scopeFactory)
            
         {
             _httpClient = httpClient;
-            _serviceProviderToken = serviceProviderToken;
+            _scopeFactory = scopeFactory;
         }
 
         public string Domain(string link)
         {
             var pattern = new Dictionary<string, string> {
 
-                {@"youtube\.com","Youtube"},
-                {@"music\.youtube\.com","Youtube Music"},
-                {@"open\.spotify\.com","Spotify"},
-                {@"soundcloud\.com","Sound Cloud"},
-                {@"music\.apple\.com","Apple Music"},
-                {@"deezer\.com","Deezer"},
-                {@"tidal\.com","Tidal"},
-                {@"music\.amazon\.com","Amazon Music"},
+                {@"^https:\/\/www\.youtube\.com\/playlist","Youtube"},
+                {@"^https:\/\/music\.youtube\.com\/playlist","Youtube Music"},
+                {@"^https:\/\/open\.spotify\.com\/playlist","Spotify"},
+                {@"^https:\/\/soundcloud\.com","Sound Cloud"},
+                {@"^https:\/\/music\.apple\.com(?:\/[a-z]{2})?\/playlist","Apple Music"},
+                {@"^https:\/\/www\.deezer\.com(?:\/[a-z]{2})?\/playlist","Deezer"},
+                {@"tidal\.com\/playlist","Tidal"},
+                {@"music\.amazon\.com\/user-playlist","Amazon Music"},
 
             };
             foreach(var dom in pattern)
@@ -50,12 +50,14 @@ namespace tunepool.Repository.Configuration.Helper
 
             switch (platform)
             {
+                case "Youtube Music":
                 case "Youtube":
                     var query = HttpUtility.ParseQueryString(uri.Query);
                     return query["list"]!;
                 case "Spotify":
                 case "Deezer":
                 case "Tidal":
+                case "Amazon Music":
                     string[] segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
                     return segments[^1];
                 default:
@@ -85,17 +87,21 @@ namespace tunepool.Repository.Configuration.Helper
             string id = ExtractPlaylistID(link,platform);
             string thumbanail = "";
 
+            using var scope = _scopeFactory.CreateScope();
+            var configuration = scope.ServiceProvider.GetService<IConfiguration>();
+            var apikey = configuration?.GetSection("APIKEY").Get<APIKEY>();
+
             if (platform == "Youtube" || platform == "Youtube Music")
             {
-                string key = Environment.GetEnvironmentVariable("YTAPIKEY")!;
+                string key = apikey.YTAPIKEY;
                 request = "https://youtube.googleapis.com/youtube/v3/playlists?part=snippet%2CcontentDetails&id=";
                 request += id + "&key=" + key;
                 thumbanail = await GetYoutubeThumbnail(request);
             }
             if (platform == "Sound Cloud")
             {
-                string clientId = Environment.GetEnvironmentVariable("SCCLIENTID")!;
-                string secretId = Environment.GetEnvironmentVariable("SCSECRETID")!;
+                string clientId = apikey.SCCLIENTID;
+                string secretId = apikey.SCSECRETID;
 
                 string escapeUrl = Uri.EscapeDataString(link);
                 request = $"https://api.soundcloud.com/resolve?url={escapeUrl}" ;
@@ -109,14 +115,14 @@ namespace tunepool.Repository.Configuration.Helper
             }
             if(platform == "Tidal")
             {
-                string clientId = Environment.GetEnvironmentVariable("TLCLIENTID")!;
-                string secretId = Environment.GetEnvironmentVariable("TLSECRETID")!;
+                string clientId = apikey.TLCLIENTID;
+                string secretId = apikey.TLSECRETID;
                 request = $"https://openapi.tidal.com/v2/playlists/{id}?include=coverArt";
                 thumbanail = await GetTidalThumbnail(request,clientId,secretId,platform);
             }
             if (platform == "Spotify")
             {
-                string bearer = Environment.GetEnvironmentVariable("SPTYKEY")!;
+                string bearer = apikey.SPTYKEY!;
                 request = $"https://api.spotify.com/v1/playlists/{id}";
                 thumbanail = await GetSpotifyThumbnail(request, bearer, platform, defaultThumbnail, index);
             }
@@ -146,8 +152,10 @@ namespace tunepool.Repository.Configuration.Helper
 
         public async Task<string> GetSoundCloudThumbnail(string request, string clientId, string secretId, string platform)
         {
+            using var scope = _scopeFactory.CreateScope();
+            var serviceProviderToken = scope.ServiceProvider.GetService<IServiceProviderToken>();
 
-            var soundCloud = await _serviceProviderToken.GetAccessToken(platform);
+            var soundCloud = await serviceProviderToken!.GetAccessToken(platform);
             string authString = clientId + ":" + secretId;
             string authBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(authString));
             var accessToken = soundCloud.FirstOrDefault() ?? new Model.serviceProviderToken.ServiceProviderToken();
@@ -160,7 +168,7 @@ namespace tunepool.Repository.Configuration.Helper
                         new KeyValuePair<string, string>("grant_type","client_credentials")
                 });
                 var response = await _httpClient.SendAsync(tokenRequest);
-                accessToken = await _serviceProviderToken.AddSoundCloudAccessToken(response, platform);
+                accessToken = await serviceProviderToken.AddSoundCloudAccessToken(response, platform);
             }
             if (DateTime.UtcNow > accessToken.expiresIn)
             {
@@ -174,7 +182,7 @@ namespace tunepool.Repository.Configuration.Helper
                 });
 
                 var response = await _httpClient.SendAsync(refreshTokenRequest);
-                accessToken = await _serviceProviderToken.RefreshSoundCloudAccessToken(response, accessToken);
+                accessToken = await serviceProviderToken.RefreshSoundCloudAccessToken(response, accessToken);
             }
 
             var apiRequest = new HttpRequestMessage(HttpMethod.Get, request);
@@ -184,7 +192,7 @@ namespace tunepool.Repository.Configuration.Helper
             // If 302 redirect, follow manually
             if (result.StatusCode == System.Net.HttpStatusCode.Redirect || result.StatusCode == System.Net.HttpStatusCode.MovedPermanently)
             {
-                var redirectUrl = result.Headers.Location.ToString();
+                var redirectUrl = result?.Headers?.Location?.ToString();
                 var redirectRequest = new HttpRequestMessage(HttpMethod.Get, redirectUrl);
                 redirectRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.accessToken);
 
@@ -208,7 +216,10 @@ namespace tunepool.Repository.Configuration.Helper
 
         public async Task<string> GetTidalThumbnail(string request, string clientId, string secretId,string platform)
         {
-            var tidal = await _serviceProviderToken.GetAccessToken(platform);
+            using var scope = _scopeFactory.CreateScope();
+            var serviceProviderToken = scope.ServiceProvider.GetService<IServiceProviderToken>();
+
+            var tidal = await serviceProviderToken!.GetAccessToken(platform);
             string authString = clientId + ":" + secretId;
             string authBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(authString));
             var accessToken = tidal.FirstOrDefault() ?? new Model.serviceProviderToken.ServiceProviderToken();
@@ -222,7 +233,7 @@ namespace tunepool.Repository.Configuration.Helper
                     new KeyValuePair<string,string>("grant_type","client_credentials")
                 });
                 var response = await _httpClient.SendAsync(tokenRequest);
-                accessToken = await _serviceProviderToken.AddTidalAccessToken(response, platform);
+                accessToken = await serviceProviderToken.AddTidalAccessToken(response, platform);
             }
             if(DateTime.UtcNow > accessToken.expiresIn)
             {
@@ -233,7 +244,7 @@ namespace tunepool.Repository.Configuration.Helper
                     new KeyValuePair<string,string>("grant_type","client_credentials")
                 });
                 var response = await _httpClient.SendAsync(tokenRequest);
-                accessToken = await _serviceProviderToken.RefreshTidalAccessToken(response, accessToken);
+                accessToken = await serviceProviderToken.RefreshTidalAccessToken(response, accessToken);
             }
 
             var apiRequest = new HttpRequestMessage(HttpMethod.Get, request);

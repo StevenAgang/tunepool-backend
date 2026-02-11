@@ -20,7 +20,7 @@ namespace tunepool.Repository.Model.playlist
         public string? thumbnail { get; set; }
 
         //Navigation Prop
-        public ICollection<Popularity>? Popularity { get; set; }
-        public ICollection<PlaylistTags>? PlaylistTags { get; set; }
+        public ICollection<Popularity> Popularity { get; set; } = new List<Popularity>();
+        public ICollection<PlaylistTags> PlaylistTags { get; set; } = new List<PlaylistTags>();
     }
 }

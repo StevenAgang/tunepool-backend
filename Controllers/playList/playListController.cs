@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Sprache;
 using tunepool.Repository.Configuration.Helper;
 using tunepool.Repository.Interface.playlistInterface;
 using tunepool.Repository.Service.Validation.Playlist;
 using tunepool.Repository.ViewModel.playlistViewModel;
-using tunepool.Repository.ViewModel.popularityViewModel;
 
 namespace tunepool.Controllers.playList
 {
@@ -29,17 +27,24 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpGet("GetAllPlaylist")]
-        public async Task<IActionResult> GetAllPlaylist(int lastId)
+        public async Task<IActionResult> GetAllPlaylist(int? lastId, string? metaData, int? platform, int? tags)
         {
             try
             {
-                var result = await _playListService.All();
+                var result = await _playListService.All(lastId, metaData, platform, tags);
 
-                var pages = _playListService.SlicePage(result,lastId);
+                var lastItem = result.LastOrDefault();
+                if(lastItem == null)
+                {
+                    lastId = 0;
+                }
+                else
+                {
+                    lastId = lastItem.id;
+                }
+                bool lastPageStatus = await _playListService.CheckNextPage(lastId, metaData, platform, tags);
 
-                var lastPageStatus = _playListService.CheckLastPage(result, lastId);
-
-                return StatusCode(200, _requestStatusHelper.Success(200, true, null, pages, lastPageStatus));
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, result, lastPageStatus));
             }
             catch (Exception ex)
             {
@@ -75,15 +80,29 @@ namespace tunepool.Controllers.playList
             }
         }
 
-        [HttpPost("AddPlaylist")]
-        public async Task<IActionResult> AddPlaylist(string link,string title,string description,string[] tags)
+        [HttpGet("GetAllPlatform")]
+        public async Task<IActionResult> SupportedPlatform()
         {
             try
             {
-                _playlistValidation.PlaylistInput(link,title,description,tags);
-                string platform =  _linkExtractor.Domain(link);
-                string thumbnail = await _linkExtractor.Thumbnails(link,platform);
-                await _playListService.Add(link, title, description, tags, thumbnail, platform);
+                var result = await _playListService.GetAllPlatform();
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, result, null));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null, null));
+            }
+        }
+
+        [HttpPost("AddPlaylist")]
+        public async Task<IActionResult> AddPlaylist([FromBody] PlaylistRequestModel playlist)
+        {
+            try
+            {
+                _playlistValidation.PlaylistInput(playlist);
+                string platform =  _linkExtractor.Domain(playlist.playList_Urls);
+                string thumbnail = await _linkExtractor.Thumbnails(playlist.playList_Urls,platform);
+                await _playListService.Add(playlist, thumbnail, platform);
                 return StatusCode(200, _requestStatusHelper.Success(200, true, "Playlist Added Successfully", null, null));
             }
             catch (Exception ex)
@@ -92,12 +111,12 @@ namespace tunepool.Controllers.playList
             }
         }
 
-        [HttpPut("LikePlaylist")]
-        public async Task<IActionResult> LikePlaylist([FromBody] PopularityViewModel playlist)
+        [HttpPatch("LikePlaylist")]
+        public async Task<IActionResult> LikePlaylist([FromQuery] int playlistId)
         {
             try
             {
-                await _playListService.Like(playlist);
+                await _playListService.Like(playlistId);
                 return StatusCode(200, _requestStatusHelper.Success(200, true, null, null, null));
             }
             catch (Exception ex)
@@ -106,13 +125,13 @@ namespace tunepool.Controllers.playList
             }
         }
 
-        [HttpPut("HeartPlaylist")]
-        public async Task<IActionResult> HeartsPlaylist([FromBody] PopularityViewModel playlist)
+        [HttpPatch("HeartPlaylist")]
+        public async Task<IActionResult> HeartsPlaylist([FromQuery] int playlistId)
         {
             try
             {
                 await 
-                    _playListService.Hearts(playlist);
+                    _playListService.Hearts(playlistId);
                 return StatusCode(200, _requestStatusHelper.Success(200, true, null, null, null));
             }
             catch (Exception ex)
@@ -121,5 +140,32 @@ namespace tunepool.Controllers.playList
             }
         }
 
+        [HttpPatch("UnlikePlaylist")]
+        public async Task<IActionResult> UnlikePlaylist([FromQuery] int playlistId)
+        {
+            try
+            {
+                await _playListService.Unlike(playlistId);
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, null, null));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null, null));
+            }
+        }
+
+        [HttpPatch("UnheartPlaylist")]
+        public async Task<IActionResult> UnheartPlaylist([FromQuery] int playlistId)
+        {
+            try
+            {
+                await _playListService.Unheart(playlistId);
+                return StatusCode(200, _requestStatusHelper.Success(200, true, null, null, null));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, _requestStatusHelper.Success(500, false, ex.Message, null, null));
+            }
+        }
     }
 }

@@ -8,9 +8,9 @@ namespace tunepool.Repository.Model.playlistTags
     {
         [ForeignKey("Playlist")]
         public int playlist_id { get; set; }
-        public Playlist? Playlist { get; set; }
+        public Playlist Playlist { get; set; } = null!;
         [ForeignKey("Tags")]
         public int tags_id { get; set; }
-        public Tags? Tags{ get; set; }
+        public Tags Tags { get; set; } = null!;
     }
 }
