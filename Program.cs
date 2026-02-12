@@ -20,7 +20,7 @@ namespace tunepool
             {
                 options.AddPolicy("FrontEnd", policy =>
                 {
-                    policy.WithOrigins("https://tunepool-6x3vxsgkh-steven-agangs-projects.vercel.app/")
+                    policy.WithOrigins("https://tunepool.vercel.app/")
                     .AllowAnyHeader()
                     .AllowAnyMethod();
                 });

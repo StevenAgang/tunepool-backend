@@ -13,7 +13,7 @@ namespace tunepool.Repository.Configuration.Helper
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _timer = new Timer(RunWeekly, null, TimeSpan.FromDays(7), TimeSpan.FromDays(7));
+            _timer = new Timer(RunWeekly, null, TimeSpan.Zero, TimeSpan.FromDays(7));
             return Task.CompletedTask;
         }
 

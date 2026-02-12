@@ -199,15 +199,20 @@ namespace tunepool.Repository.Service.PlaylistService
             var resetOldRank = await _context.Database.ExecuteSqlRawAsync("UPDATE Popularity SET rank = 0");
 
             var updatedrank = await _context.Popularity
+                .Where(p => p.hearts != 0 && p.likes != 0)
                 .OrderByDescending(p => p.hearts + p.likes)
                 .ThenByDescending(p => p.hearts)
                 .Take(3)
                 .ToListAsync();
 
+            if (updatedrank.Count == 0) return;
+
             updatedrank.ForEach(p => p.rank = 0);
-            updatedrank[0].rank = 1;
-            updatedrank[1].rank = 2;
-            updatedrank[2].rank = 3;
+
+            for (int iterator = 0; iterator < updatedrank.Count; iterator++)
+            {
+                updatedrank[0].rank = iterator + 1;
+            }
 
             _context.UpdateRange(updatedrank);
             await _context.SaveChangesAsync();
