@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using tunepool.Repository;
 using tunepool.Repository.Configuration.Helper;
@@ -19,7 +20,7 @@ namespace tunepool
             {
                 options.AddPolicy("FrontEnd", policy =>
                 {
-                    policy.WithOrigins("https://localhost:4200", "http://localhost:4200", "http://192.168.31.190:4200", "https://192.168.31.190:4200", "http://172.28.144.1:4200/", "https://172.28.144.1:4200/")
+                    policy.WithOrigins("https://tunepool-8wke6aczb-steven-agangs-projects.vercel.app")
                     .AllowAnyHeader()
                     .AllowAnyMethod();
                 });
@@ -33,6 +34,8 @@ namespace tunepool
             //Singleton Service
             builder.Services.AddSingleton<RequestStatusHelper >();
             builder.Services.AddSingleton<PlaylistValidation>();
+
+            //Background Worker
             builder.Services.AddHostedService<Polling>();
 
             builder.Services.AddDbContext<DatabaseContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using tunepool.Repository.Configuration.AttributeExtender;
 using tunepool.Repository.Configuration.Helper;
 using tunepool.Repository.Interface.playlistInterface;
 using tunepool.Repository.Service.Validation.Playlist;
@@ -27,6 +28,7 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpGet("GetAllPlaylist")]
+        [Control]
         public async Task<IActionResult> GetAllPlaylist(int? lastId, string? metaData, int? platform, int? tags)
         {
             try
@@ -53,6 +55,7 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpGet("GetRanking")]
+        [Control]
         public async Task<IActionResult> GetRanking()
         {
             try
@@ -67,6 +70,7 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpGet("GetAllTags")]
+        [Control]
         public async Task<IActionResult> GetAllTags()
         {
             try
@@ -81,6 +85,7 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpGet("GetAllPlatform")]
+        [Control]
         public async Task<IActionResult> SupportedPlatform()
         {
             try
@@ -95,6 +100,7 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpPost("AddPlaylist")]
+        [Control]
         public async Task<IActionResult> AddPlaylist([FromBody] PlaylistRequestModel playlist)
         {
             try
@@ -112,6 +118,7 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpPatch("LikePlaylist")]
+        [Control]
         public async Task<IActionResult> LikePlaylist([FromQuery] int playlistId)
         {
             try
@@ -126,6 +133,7 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpPatch("HeartPlaylist")]
+        [Control]
         public async Task<IActionResult> HeartsPlaylist([FromQuery] int playlistId)
         {
             try
@@ -141,6 +149,7 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpPatch("UnlikePlaylist")]
+        [Control]
         public async Task<IActionResult> UnlikePlaylist([FromQuery] int playlistId)
         {
             try
@@ -155,6 +164,7 @@ namespace tunepool.Controllers.playList
         }
 
         [HttpPatch("UnheartPlaylist")]
+        [Control]
         public async Task<IActionResult> UnheartPlaylist([FromQuery] int playlistId)
         {
             try

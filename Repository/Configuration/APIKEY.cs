@@ -8,5 +8,6 @@
         public string? TLCLIENTID { get; set; }
         public string? TLSECRETID { get; set; }
         public string? YTAPIKEY { get; set; }
+        public string? CLIENTKEY { get; set; }
     }
 }
