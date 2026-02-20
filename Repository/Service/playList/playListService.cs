@@ -20,8 +20,9 @@ namespace tunepool.Repository.Service.PlaylistService
         }
 
         #region Get
-        public async Task<List<PlaylistViewModel>> All(int? lastId, string? metaData, int? platform, int? tags)
+        public async Task<List<PlaylistViewModel>> All(int? lastId, string? metaData, int? platform, int? tags, CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
             if(lastId == 0)
             {
                 lastId = await _context.Playlist.CountAsync() + 1;
@@ -51,20 +52,22 @@ namespace tunepool.Repository.Service.PlaylistService
                         rank = pop.rank
                     }).ToList(),
                     Platform = new PlatformViewModel { Id = p.Id, name = p.Platform!.name },
-            }).Take(10).ToListAsync();
+            }).Take(10).ToListAsync(token);
   
             return playlist;
         }
 
-        public async Task<bool> CheckNextPage(int? lastId, string? metaData, int? platform, int? tags)
+        public async Task<bool> CheckNextPage(int? lastId, string? metaData, int? platform, int? tags, CancellationToken token)
         {
-            var status = await _context.Playlist.AsNoTracking().AnyAsync(p => p.Id < lastId && p.Popularity.Any(a => a.rank == 0) && (metaData == null || p.title.Contains(metaData) || p.description.Contains(metaData)) && (platform == null || p.platform_id == platform) && (tags == null || p.PlaylistTags.Any(t => t.tags_id == tags)));
+            token.ThrowIfCancellationRequested();
+            var status = await _context.Playlist.AsNoTracking().AnyAsync(p => p.Id < lastId && p.Popularity.Any(a => a.rank == 0) && (metaData == null || p.title.Contains(metaData) || p.description.Contains(metaData)) && (platform == null || p.platform_id == platform) && (tags == null || p.PlaylistTags.Any(t => t.tags_id == tags)), token);
 
             return status;
         }
 
-        public async Task<List<PlaylistViewModel>> PlaylistRanking()
+        public async Task<List<PlaylistViewModel>> PlaylistRanking(CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
             var Playlist = await _context.Playlist
                 .AsNoTracking()
                 .Where(p => p.Popularity.Any(a => a.rank != 0))
@@ -89,28 +92,30 @@ namespace tunepool.Repository.Service.PlaylistService
                         rank = pop.rank
                     }).ToList(),
                     Platform = new PlatformViewModel { Id = p.Id, name = p.Platform!.name },
-                }).Take(3).ToListAsync();
+                }).Take(3).ToListAsync(token);
 
             return Playlist;
         }
 
-        public async Task<List<TagsViewModel>> GetAllTags()
+        public async Task<List<TagsViewModel>> GetAllTags(CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
             var tags = await _context.Tags.AsNoTracking().Select(t => new TagsViewModel
             {
                 id = t.Id,
                 name = t.name
-            }).ToListAsync();
+            }).ToListAsync(token);
             return tags;
         }
 
-        public async Task<List<PlatformViewModel>> GetAllPlatform()
+        public async Task<List<PlatformViewModel>> GetAllPlatform(CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
             var platform = await _context.PlatForm.AsNoTracking().Select(p => new PlatformViewModel
             {
                 Id = p.Id,
                 name = p.name
-            }).ToListAsync();
+            }).ToListAsync(token);
             return platform;
         }
         #endregion
@@ -194,9 +199,10 @@ namespace tunepool.Repository.Service.PlaylistService
             await _context.SaveChangesAsync();
         }
 
-        public async Task WeeklyRanking()
+        public async Task WeeklyRanking(CancellationToken token)
         {
-            var resetOldRank = await _context.Database.ExecuteSqlRawAsync("UPDATE Popularity SET rank = 0");
+            token.ThrowIfCancellationRequested();
+            var resetOldRank = await _context.Database.ExecuteSqlRawAsync("UPDATE Popularity SET rank = 0", token);
 
             var updatedrank = await _context.Popularity
                 .Where(p => p.hearts != 0 && p.likes != 0)
@@ -211,6 +217,7 @@ namespace tunepool.Repository.Service.PlaylistService
 
             for (int iterator = 0; iterator < updatedrank.Count; iterator++)
             {
+                token.ThrowIfCancellationRequested();
                 updatedrank[0].rank = iterator + 1;
             }
 
