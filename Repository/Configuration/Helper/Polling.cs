@@ -8,7 +8,7 @@ namespace tunepool.Repository.Configuration.Helper
         {
             await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
 
-            while(!stoppingToken.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested)
             {
                 using var scope = _scopeFactory.CreateScope();
 
@@ -16,7 +16,7 @@ namespace tunepool.Repository.Configuration.Helper
                 {
                     await RunWeekly(stoppingToken);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _logger.LogInformation($"Error in Background Service: {ex.Message}");
                     await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
@@ -24,11 +24,6 @@ namespace tunepool.Repository.Configuration.Helper
 
                 await Task.Delay(TimeSpan.FromDays(7), stoppingToken);
             }
-
-        public Task StartAsync(CancellationToken cancellationToken)
-        {
-            _timer = new Timer(async _ => await RunWeekly(cancellationToken),  null, TimeSpan.FromMinutes(5), TimeSpan.FromDays(1));
-            return Task.CompletedTask;
         }
 
         public async Task RunWeekly(CancellationToken token) {
