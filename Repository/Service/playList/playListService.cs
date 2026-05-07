@@ -202,7 +202,7 @@ namespace tunepool.Repository.Service.PlaylistService
         public async Task WeeklyRanking(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            var resetOldRank = await _context.Popularity.ExecuteUpdateAsync(p => p.SteProperty(x => x.rank, 0), token);
+            var resetOldRank = await _context.Popularity.ExecuteUpdateAsync(p => p.SetProperty(x => x.rank, 0), token);
 
             var updatedrank = await _context.Popularity
                 .Where(p => p.hearts != 0 || p.likes != 0)
