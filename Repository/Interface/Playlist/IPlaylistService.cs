@@ -63,6 +63,6 @@ namespace tunepool.Repository.Interface.playlistInterface
 
         Task Unheart(int playlistId);
 
-        Task WeeklyRanking();
+        Task WeeklyRanking(CancellationToken token);
     }
 }
