@@ -194,12 +194,14 @@ namespace tunepool.Repository.Service.PlaylistService
             await _context.SaveChangesAsync();
         }
 
-        public async Task WeeklyRanking()
+        public async Task WeeklyRanking(CancellationToken token)
         {
-            var resetOldRank = await _context.Database.ExecuteSqlRawAsync("UPDATE Popularity SET rank = 0");
+            token.ThrowIfCancellationRequested();
+
+            var resetOldRank = await _context.Popularity.ExecuteUpdateAsync(p => p.SetProperty(x => x.rank, 0), token);
 
             var updatedrank = await _context.Popularity
-                .Where(p => p.hearts != 0 && p.likes != 0)
+                .Where(p => p.hearts != 0 || p.likes != 0)
                 .OrderByDescending(p => p.hearts + p.likes)
                 .ThenByDescending(p => p.hearts)
                 .Take(3)
@@ -211,7 +213,8 @@ namespace tunepool.Repository.Service.PlaylistService
 
             for (int iterator = 0; iterator < updatedrank.Count; iterator++)
             {
-                updatedrank[0].rank = iterator + 1;
+                token.ThrowIfCancellationRequested();
+                updatedrank[iterator].rank = iterator + 1;
             }
 
             _context.UpdateRange(updatedrank);
