@@ -25,12 +25,18 @@ namespace tunepool.Repository.Configuration.Helper
                 await Task.Delay(TimeSpan.FromDays(7), stoppingToken);
             }
 
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            _timer = new Timer(async _ => await RunWeekly(cancellationToken),  null, TimeSpan.FromMinutes(5), TimeSpan.FromDays(1));
+            return Task.CompletedTask;
         }
 
-        public async Task RunWeekly(object? state) {
-           using var scope = _scopeFactory.CreateScope();
+        public async Task RunWeekly(CancellationToken token) {
+            if (token.IsCancellationRequested) return;
+            using var scope = _scopeFactory.CreateScope();
             var playlistService = scope.ServiceProvider.GetRequiredService<IPlaylistService>();
-            await playlistService.WeeklyRanking();
+            await playlistService.WeeklyRanking(token);
         }
     }
 }
+ 

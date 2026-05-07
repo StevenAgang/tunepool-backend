@@ -29,11 +29,12 @@ namespace tunepool.Controllers.playList
 
         [HttpGet("GetAllPlaylist")]
         [Control]
-        public async Task<IActionResult> GetAllPlaylist(int? lastId, string? metaData, int? platform, int? tags)
+        public async Task<IActionResult> GetAllPlaylist(int? lastId, string? metaData, int? platform, int? tags, CancellationToken token)
         {
             try
-            {
-                var result = await _playListService.All(lastId, metaData, platform, tags);
+            {  
+                token.ThrowIfCancellationRequested();
+                var result = await _playListService.All(lastId, metaData, platform, tags, token);
 
                 var lastItem = result.LastOrDefault();
                 if(lastItem == null)
@@ -44,7 +45,7 @@ namespace tunepool.Controllers.playList
                 {
                     lastId = lastItem.id;
                 }
-                bool lastPageStatus = await _playListService.CheckNextPage(lastId, metaData, platform, tags);
+                bool lastPageStatus = await _playListService.CheckNextPage(lastId, metaData, platform, tags, token);
 
                 return StatusCode(200, _requestStatusHelper.Success(200, true, null, result, lastPageStatus));
             }
@@ -56,11 +57,11 @@ namespace tunepool.Controllers.playList
 
         [HttpGet("GetRanking")]
         [Control]
-        public async Task<IActionResult> GetRanking()
+        public async Task<IActionResult> GetRanking(CancellationToken token)
         {
             try
             {
-                var result = await _playListService.PlaylistRanking();
+                var result = await _playListService.PlaylistRanking(token);
                 return StatusCode(200, _requestStatusHelper.Success(200, true, null, result, null));
             }
             catch (Exception ex)
@@ -71,11 +72,12 @@ namespace tunepool.Controllers.playList
 
         [HttpGet("GetAllTags")]
         [Control]
-        public async Task<IActionResult> GetAllTags()
+        public async Task<IActionResult> GetAllTags(CancellationToken token)
         {
             try
             {
-                var result = await _playListService.GetAllTags();
+                token.ThrowIfCancellationRequested();
+                var result = await _playListService.GetAllTags(token);
                 return StatusCode(200, _requestStatusHelper.Success(200, true, null, result, null));
             }
             catch (Exception ex)
@@ -86,11 +88,11 @@ namespace tunepool.Controllers.playList
 
         [HttpGet("GetAllPlatform")]
         [Control]
-        public async Task<IActionResult> SupportedPlatform()
+        public async Task<IActionResult> SupportedPlatform(CancellationToken token)
         {
             try
             {
-                var result = await _playListService.GetAllPlatform();
+                var result = await _playListService.GetAllPlatform(token);
                 return StatusCode(200, _requestStatusHelper.Success(200, true, null, result, null));
             }
             catch (Exception ex)
