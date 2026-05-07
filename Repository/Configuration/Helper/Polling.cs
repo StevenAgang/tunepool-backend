@@ -2,14 +2,28 @@
 
 namespace tunepool.Repository.Configuration.Helper
 {
-    public class Polling : IHostedService
+    public class Polling(IServiceScopeFactory _scopeFactory, ILogger<Polling> _logger) : BackgroundService
     {
-        private readonly IServiceScopeFactory _scopeFactory;
-        private Timer _timer;
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
 
-        public Polling(IServiceScopeFactory scopeFactory) {
-            _scopeFactory = scopeFactory;
-        }
+            while(!stoppingToken.IsCancellationRequested)
+            {
+                using var scope = _scopeFactory.CreateScope();
+
+                try
+                {
+                    await RunWeekly(stoppingToken);
+                }
+                catch(Exception ex)
+                {
+                    _logger.LogInformation($"Error in Background Service: {ex.Message}");
+                    await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                }
+
+                await Task.Delay(TimeSpan.FromDays(7), stoppingToken);
+            }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -22,12 +36,6 @@ namespace tunepool.Repository.Configuration.Helper
             using var scope = _scopeFactory.CreateScope();
             var playlistService = scope.ServiceProvider.GetRequiredService<IPlaylistService>();
             await playlistService.WeeklyRanking(token);
-        }
-        
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            _timer?.Dispose();
-            return Task.CompletedTask;
         }
     }
 }
