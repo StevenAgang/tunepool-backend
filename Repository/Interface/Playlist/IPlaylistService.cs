@@ -12,24 +12,24 @@ namespace tunepool.Repository.Interface.playlistInterface
         /// Return all Playlist
         /// </summary>
         /// <returns>Returns a set of Playlist</returns>
-        Task<List<PlaylistViewModel>> All(int? lastId, string? metaData, int? platform, int? tags);
+        Task<List<PlaylistViewModel>> All(int? lastId, string? metaData, int? platform, int? tags, CancellationToken token);
 
-        Task<bool> CheckNextPage(int? lastId, string? metaData, int? platform, int? tags);
+        Task<bool> CheckNextPage(int? lastId, string? metaData, int? platform, int? tags, CancellationToken token);
 
         //bool CheckLastPage(List<PlaylistViewModel> playlist, int lastId);
 
-        Task<List<PlaylistViewModel>> PlaylistRanking();
+        Task<List<PlaylistViewModel>> PlaylistRanking(CancellationToken token);
 
         /// <summary>
         ///  Return all available mood tags
         /// </summary>
         /// <returns></returns>
-        Task<List<TagsViewModel>> GetAllTags();
+        Task<List<TagsViewModel>> GetAllTags(CancellationToken token);
         /// <summary>
         ///    Return all available platform
         /// </summary>
         /// <returns></returns>
-        Task<List<PlatformViewModel>> GetAllPlatform();
+        Task<List<PlatformViewModel>> GetAllPlatform(CancellationToken token);
 
         /// <summary>
         /// Add new Playlist
